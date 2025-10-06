@@ -4,194 +4,228 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>日本在住外国人向け eGFR 計算ツール</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        backdropBlur: {
+          'xs': '2px',
+        },
+        animation: {
+          'fade-in': 'fadeIn 0.5s ease-in-out',
+          'slide-up': 'slideUp 0.4s ease-out',
+          'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+          'bounce-soft': 'bounceSoft 0.6s ease-out',
+          'shimmer': 'shimmer 1.5s ease-in-out infinite',
+        },
+        keyframes: {
+          fadeIn: {
+            '0%': { opacity: '0', transform: 'translateY(10px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' }
+          },
+          slideUp: {
+            '0%': { opacity: '0', transform: 'translateY(20px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' }
+          },
+          pulseGlow: {
+            '0%, 100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' },
+            '50%': { boxShadow: '0 0 30px rgba(59, 130, 246, 0.6)' }
+          },
+          bounceSoft: {
+            '0%': { transform: 'scale(0.95)' },
+            '50%': { transform: 'scale(1.02)' },
+            '100%': { transform: 'scale(1)' }
+          },
+          shimmer: {
+            '0%': { transform: 'translateX(-100%)' },
+            '100%': { transform: 'translateX(100%)' }
+          }
+        }
+      }
+    }
+  }
+</script>
 <style>
-  :root{
-    --bg:#0b1220;
-    --glass:rgba(255,255,255,.12);
-    --glass-strong:rgba(255,255,255,.18);
-    --border:rgba(255,255,255,.25);
-    --text:#eaf2ff;
-    --muted:#b9c6e1;
-    --accent:#7fb0ff;
-    --ok:#5bd48b;
-    --warn:#ffd36e;
-    --bad:#ff7f7f;
-    --shadow: 0 10px 40px rgba(0,0,0,.35);
-    --radius: 18px;
+  body {
+    background: 
+      radial-gradient(1200px 800px at 80% -10%, rgba(31, 42, 68, 0.8) 0%, transparent 60%),
+      radial-gradient(1000px 600px at -10% 120%, rgba(25, 37, 62, 0.8) 0%, transparent 60%),
+      linear-gradient(180deg, #0f172a, #1e293b 50%, #0f172a 100%);
+    min-height: 100vh;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-    color:var(--text);
-    background:
-      radial-gradient(1200px 800px at 80% -10%, #1f2a44 0%, transparent 60%),
-      radial-gradient(1000px 600px at -10% 120%, #19253e 0%, transparent 60%),
-      linear-gradient(180deg, #0b1220, #0a1020 50%, #080e1b 100%);
-    min-height:100%;
-    -webkit-font-smoothing: antialiased;
+  .glass {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
   }
-  .wrap{
-    max-width:960px; margin: min(5vw,28px) auto; padding: clamp(10px,3vw,22px);
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
   }
-  .card{
-    background: var(--glass);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(14px) saturate(120%);
-    -webkit-backdrop-filter: blur(14px) saturate(120%);
+  .shimmer-effect {
+    position: relative;
+    overflow: hidden;
   }
-  header.card{
-    padding:18px 16px 12px;
+  .shimmer-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 2s infinite;
   }
-  header h1{
-    margin:0 0 6px; font-size: clamp(18px,4.5vw,24px); letter-spacing:.04em;
-  }
-  header p{margin:.25rem 0 .5rem; color:var(--muted); font-size: .95rem;}
-  .grid{
-    display:grid; gap:14px;
-    grid-template-columns:1fr;
-  }
-  @media (min-width:760px){
-    .grid{ grid-template-columns: 1.1fr .9fr; }
-  }
-  .panel{ padding:16px; }
-  .field{ margin:10px 0 12px; }
-  .label{ font-size:.93rem; color:var(--muted); margin:0 0 6px; display:block;}
-  input, select, button, textarea{
-    width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--border);
-    background: rgba(255,255,255,.06); color:var(--text); outline:none;
-  }
-  input::placeholder{ color:#c7d2e7aa; }
-  .row{ display:grid; gap:10px; grid-template-columns:1fr 1fr; }
-  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
-  .chip{
-    padding:8px 10px; border-radius:999px; border:1px solid var(--border);
-    background: rgba(255,255,255,.06); font-size:.9rem; cursor:pointer; user-select:none;
-  }
-  .chip input{display:none}
-  .chip.active{ outline:2px solid var(--accent); background:rgba(127,176,255,.1); }
-  .muted{ color:var(--muted); font-size:.9rem;}
-  .btn{
-    display:inline-flex; gap:8px; align-items:center; justify-content:center; cursor:pointer;
-    background: linear-gradient(180deg, #7fb0ff, #5a8fe9);
-    border: none; color:#0b1220; font-weight:700; box-shadow: 0 6px 22px rgba(90,143,233,.45);
-  }
-  .btn:active{ transform: translateY(1px); }
-  .results{ margin-top:14px; display:grid; gap:12px; }
-  .result-card{
-    padding:14px; border-radius:16px; border:1px solid var(--border); background: var(--glass-strong);
-  }
-  .title{ font-weight:700; }
-  .kicker{ font-size:.82rem; color:var(--muted); }
-  .value{ font-size: clamp(22px,6vw,30px); font-weight:800; margin:6px 0 4px;}
-  .stage{ font-size:.9rem; font-weight:700; }
-  .ok{ color:var(--ok);} .warn{ color:var(--warn);} .bad{ color:var(--bad);}
-  details{ margin-top:8px; }
-  summary{ cursor:pointer; color:var(--accent); }
-  .pill{
-    display:inline-block; padding:4px 8px; border-radius:999px; font-size:.78rem;
-    background:#2a3650; color:#cfe0ff; border:1px solid #3b4a6c;
-  }
-  footer.card{ padding:14px; margin-top:14px; }
-  a { color:#a8c7ff; }
 </style>
 </head>
-<body>
-  <div class="wrap">
-    <header class="card">
-      <h1>日本在住外国人向け eGFR 計算ツール（sCrベース）</h1>
-      <p class="muted">日本の臨床現場で使いやすいUIで、国籍に応じた推奨/類縁の推算式をまとめて計算。身長・体重を入れるとBSA補正解除（mL/min）も表示。<span class="pill">成人用</span></p>
+<body class="text-slate-100 font-sans antialiased">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Header -->
+    <header class="glass rounded-3xl p-6 mb-6 shadow-2xl animate-fade-in">
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+        日本在住外国人向け eGFR 計算ツール（sCrベース）
+      </h1>
+      <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+        日本の臨床現場で使いやすいUIで、国籍に応じた推奨/類縁の推算式をまとめて計算。身長・体重を入れるとBSA補正解除（mL/min）も表示。
+        <span class="inline-block bg-slate-700/50 text-blue-200 text-xs px-3 py-1 rounded-full ml-2 border border-slate-600">成人用</span>
+      </p>
     </header>
 
-    <div class="grid">
-      <!-- 左：入力 -->
-      <section class="panel card">
-        <div class="field">
-          <label class="label">国籍 / 地域を選択</label>
-          <select id="nationality">
-            <option value="JP">日本人（参考：JSN式）</option>
-            <option value="CN">中国（中国式あり／CKD-EPI推奨）</option>
-            <option value="TH">タイ（タイ独自式あり）</option>
-            <option value="KR">韓国（CKD-EPI推奨）</option>
-            <option value="VN">ベトナム（近縁：タイ式も参考）</option>
-            <option value="PH">フィリピン（近縁：タイ式も参考）</option>
-            <option value="NP">ネパール（近縁：タイ式も参考）</option>
-            <option value="WH">白人（CKD-EPI 2021推奨）</option>
-            <option value="AF">黒人（CKD-EPI 2021推奨）</option>
-            <option value="OT">その他（CKD-EPI 2021推奨）</option>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Left Panel: Input -->
+      <section class="glass rounded-3xl p-6 shadow-2xl animate-slide-up space-y-6">
+        <!-- Nationality Selection -->
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-slate-300">国籍 / 地域を選択</label>
+          <select id="nationality" class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10">
+            <option value="JP" class="bg-slate-800">日本人（参考：JSN式）</option>
+            <option value="CN" class="bg-slate-800">中国（中国式あり／CKD-EPI推奨）</option>
+            <option value="TH" class="bg-slate-800">タイ（タイ独自式あり）</option>
+            <option value="KR" class="bg-slate-800">韓国（CKD-EPI推奨）</option>
+            <option value="VN" class="bg-slate-800">ベトナム（近縁：タイ式も参考）</option>
+            <option value="PH" class="bg-slate-800">フィリピン（近縁：タイ式も参考）</option>
+            <option value="NP" class="bg-slate-800">ネパール（近縁：タイ式も参考）</option>
+            <option value="WH" class="bg-slate-800">白人（CKD-EPI 2021推奨）</option>
+            <option value="AF" class="bg-slate-800">黒人（CKD-EPI 2021推奨）</option>
+            <option value="OT" class="bg-slate-800">その他（CKD-EPI 2021推奨）</option>
           </select>
-          <p class="muted" id="natNote" style="margin:.4rem 0 0;"></p>
+          <p id="natNote" class="text-xs text-slate-400 leading-relaxed"></p>
         </div>
 
-        <div class="field row">
-          <div>
-            <label class="label">年齢（歳）</label>
-            <input id="age" type="number" inputmode="numeric" placeholder="例）65" />
+        <!-- Age and Sex -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-slate-300">年齢（歳）</label>
+            <input id="age" type="number" inputmode="numeric" placeholder="例）65" 
+                   class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
           </div>
-          <div>
-            <label class="label">性別</label>
-            <select id="sex">
-              <option value="male">男性</option>
-              <option value="female">女性</option>
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-slate-300">性別</label>
+            <select id="sex" class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10">
+              <option value="male" class="bg-slate-800">男性</option>
+              <option value="female" class="bg-slate-800">女性</option>
             </select>
           </div>
         </div>
 
-        <div class="field">
-          <label class="label">血清クレアチニン sCr（mg/dL）</label>
-          <input id="scr" type="number" step="0.01" inputmode="decimal" placeholder="例）1.02" />
+        <!-- Serum Creatinine -->
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-slate-300">血清クレアチニン sCr（mg/dL）</label>
+          <input id="scr" type="number" step="0.01" inputmode="decimal" placeholder="例）1.02" 
+                 class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
         </div>
 
-        <details>
-          <summary>オプション（体格・その他）</summary>
-          <div class="field row" style="margin-top:10px;">
-            <div>
-              <label class="label">身長（cm）</label>
-              <input id="height" type="number" step="0.1" inputmode="decimal" placeholder="例）170" />
+        <!-- Optional Fields -->
+        <details class="group">
+          <summary class="cursor-pointer text-blue-300 hover:text-blue-200 transition-colors duration-200 select-none">
+            <span class="group-open:rotate-90 inline-block transition-transform duration-200">▶</span>
+            オプション（体格・その他）
+          </summary>
+          <div class="mt-4 space-y-4 animate-slide-up">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <label class="block text-sm font-medium text-slate-300">身長（cm）</label>
+                <input id="height" type="number" step="0.1" inputmode="decimal" placeholder="例）170" 
+                       class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
+              </div>
+              <div class="space-y-3">
+                <label class="block text-sm font-medium text-slate-300">体重（kg）</label>
+                <input id="weight" type="number" step="0.1" inputmode="decimal" placeholder="例）65" 
+                       class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
+              </div>
             </div>
-            <div>
-              <label class="label">体重（kg）</label>
-              <input id="weight" type="number" step="0.1" inputmode="decimal" placeholder="例）65" />
+            <div class="space-y-3">
+              <label class="block text-sm font-medium text-slate-300">Cockcroft–Gault（参考）を同時表示</label>
+              <select id="showCG" class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10">
+                <option value="yes" class="bg-slate-800">表示する（体重を使用）</option>
+                <option value="no" class="bg-slate-800">表示しない</option>
+              </select>
             </div>
-          </div>
-          <div class="field">
-            <label class="label">Cockcroft–Gault（参考）を同時表示</label>
-            <select id="showCG">
-              <option value="yes">表示する（体重を使用）</option>
-              <option value="no">表示しない</option>
-            </select>
           </div>
         </details>
 
-        <div class="field">
-          <label class="label">この国籍でよく使う/参考になる推算式（複数選択可）</label>
-          <div id="formulaChips" class="chips"></div>
-          <p class="muted" style="margin-top:6px;">※ 推奨＝その国籍に第一選択として勧められる/検証の厚い式、参考＝地理・人種で近縁または歴史的比較用</p>
+        <!-- Formula Selection -->
+        <div class="space-y-4">
+          <label class="block text-sm font-medium text-slate-300">この国籍でよく使う/参考になる推算式（複数選択可）</label>
+          <div id="formulaChips" class="flex flex-wrap gap-3"></div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            ※ 推奨＝その国籍に第一選択として勧められる/検証の厚い式、参考＝地理・人種で近縁または歴史的比較用
+          </p>
         </div>
 
-        <div class="field">
-          <button class="btn" id="calcBtn">計算する</button>
-        </div>
+        <!-- Calculate Button -->
+        <button id="calcBtn" class="w-full p-4 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shimmer-effect animate-pulse-glow">
+          <span class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            計算する
+          </span>
+        </button>
       </section>
 
-      <!-- 右：結果 -->
-      <section class="panel card">
-        <div class="field">
-          <div class="label">計算結果</div>
-          <div id="results" class="results"></div>
+      <!-- Right Panel: Results -->
+      <section class="glass rounded-3xl p-6 shadow-2xl animate-slide-up" style="animation-delay: 0.1s;">
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 00-2 2h2a2 2 0 002-2V5a2 2 0 00-2-2H2a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <h3 class="text-lg font-semibold text-slate-200">計算結果</h3>
+          </div>
+          <div id="results" class="space-y-4"></div>
         </div>
       </section>
     </div>
 
-    <footer class="card">
-      <div class="kicker">注意</div>
-      <ul class="muted">
-        <li>本ツールは<b>成人</b>用のsCr推算式です（急性腎障害などsCrが急変する状況では不正確）。</li>
-        <li>結果は<b>推算</b>です。境界例・極端な体格やサルコペニアでは<b>シスタチンC</b>や<b>実測GFR</b>（核医学など）をご検討ください。</li>
-        <li>BSA未入力時は<b>標準化eGFR（mL/min/1.73m²）</b>のみ表示。身長・体重を入れると<b>非標準化（mL/min）</b>も併記します。</li>
-      </ul>
+    <!-- Footer -->
+    <footer class="glass rounded-3xl p-6 mt-6 shadow-2xl animate-fade-in" style="animation-delay: 0.2s;">
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+          <h4 class="font-semibold text-yellow-300">注意</h4>
+        </div>
+        <ul class="text-sm text-slate-300 space-y-2 leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-yellow-400 mt-1">•</span>
+            本ツールは<strong class="text-slate-200">成人</strong>用のsCr推算式です（急性腎障害などsCrが急変する状況では不正確）。
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-yellow-400 mt-1">•</span>
+            結果は<strong class="text-slate-200">推算</strong>です。境界例・極端な体格やサルコペニアでは<strong class="text-slate-200">シスタチンC</strong>や<strong class="text-slate-200">実測GFR</strong>（核医学など）をご検討ください。
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-yellow-400 mt-1">•</span>
+            BSA未入力時は<strong class="text-slate-200">標準化eGFR（mL/min/1.73m²）</strong>のみ表示。身長・体重を入れると<strong class="text-slate-200">非標準化（mL/min）</strong>も併記します。
+          </li>
+        </ul>
+      </div>
     </footer>
   </div>
 
@@ -266,12 +300,12 @@ function ccr_cg(age, sex, scr, weightKg){
 
 // KDIGO Gステージ（目安）
 function kdigoStage(egfr){
-  if(egfr >= 90) return {g:"G1", cls:"ok"};
-  if(egfr >= 60) return {g:"G2", cls:"ok"};
-  if(egfr >= 45) return {g:"G3a", cls:"warn"};
-  if(egfr >= 30) return {g:"G3b", cls:"warn"};
-  if(egfr >= 15) return {g:"G4", cls:"bad"};
-  return {g:"G5", cls:"bad"};
+  if(egfr >= 90) return {g:"G1", cls:"text-green-400"};
+  if(egfr >= 60) return {g:"G2", cls:"text-green-400"};
+  if(egfr >= 45) return {g:"G3a", cls:"text-yellow-400"};
+  if(egfr >= 30) return {g:"G3b", cls:"text-yellow-400"};
+  if(egfr >= 15) return {g:"G4", cls:"text-red-400"};
+  return {g:"G5", cls:"text-red-400"};
 }
 
 /** -------------------------
@@ -379,24 +413,52 @@ function renderChips(nat){
   const map = NAT_MAP[nat];
   natNote.textContent = map.note;
   const toShow = [...map.on, ...map.extra];
-  for(const id of toShow){
+  
+  toShow.forEach(id => {
     const f = FORMULAS[id];
+    const isRecommended = map.on.includes(id);
     const chip = document.createElement('label');
-    chip.className = 'chip' + (map.on.includes(id) ? ' active':'');
+    chip.className = `
+      cursor-pointer select-none transition-all duration-300 transform hover:scale-105
+      px-4 py-3 rounded-2xl glass border border-slate-600
+      ${isRecommended ? 'ring-2 ring-blue-400 bg-blue-500/20' : 'hover:bg-white/10'}
+      hover:shadow-lg active:scale-95
+    `;
     chip.title = f.kind + '｜' + f.cite;
     chip.dataset.id = id;
-    chip.innerHTML = `<input type="checkbox" ${map.on.includes(id) ? 'checked':''}/> ${f.name}`;
-    chip.addEventListener('click', (e)=>{
-      if(e.target.tagName.toLowerCase()==='input') return;
+    
+    chip.innerHTML = `
+      <input type="checkbox" ${isRecommended ? 'checked':''} class="hidden"/>
+      <span class="text-sm font-medium ${isRecommended ? 'text-blue-200' : 'text-slate-300'}">${f.name}</span>
+    `;
+    
+    chip.addEventListener('click', (e) => {
+      if(e.target.tagName.toLowerCase() === 'input') return;
       const cb = chip.querySelector('input');
       cb.checked = !cb.checked;
-      chip.classList.toggle('active', cb.checked);
+      
+      // Animate selection
+      chip.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        chip.style.transform = '';
+        if(cb.checked) {
+          chip.classList.add('ring-2', 'ring-blue-400', 'bg-blue-500/20');
+          chip.querySelector('span').classList.add('text-blue-200');
+          chip.querySelector('span').classList.remove('text-slate-300');
+        } else {
+          chip.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-500/20');
+          chip.querySelector('span').classList.remove('text-blue-200');
+          chip.querySelector('span').classList.add('text-slate-300');
+        }
+      }, 100);
     });
+    
     chipsBox.appendChild(chip);
-  }
+  });
 }
+
 renderChips(natSel.value);
-natSel.addEventListener('change', ()=>renderChips(natSel.value));
+natSel.addEventListener('change', () => renderChips(natSel.value));
 
 /** -------------------------
  *  計算
@@ -404,8 +466,47 @@ natSel.addEventListener('change', ()=>renderChips(natSel.value));
 function toNum(id){ const v = parseFloat(document.getElementById(id).value); return isFinite(v)? v: null; }
 function selVal(id){ return document.getElementById(id).value; }
 
-document.getElementById('calcBtn').addEventListener('click', ()=>{
-  resultsBox.innerHTML = '';
+document.getElementById('calcBtn').addEventListener('click', () => {
+  const btn = document.getElementById('calcBtn');
+  
+  // Button animation
+  btn.style.transform = 'scale(0.95)';
+  btn.innerHTML = `
+    <span class="flex items-center justify-center gap-2">
+      <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      計算中...
+    </span>
+  `;
+  
+  setTimeout(() => {
+    btn.style.transform = '';
+    btn.innerHTML = `
+      <span class="flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        計算する
+      </span>
+    `;
+    
+    // Clear previous results with animation
+    Array.from(resultsBox.children).forEach((child, index) => {
+      setTimeout(() => {
+        child.style.opacity = '0';
+        child.style.transform = 'translateY(-10px)';
+      }, index * 50);
+    });
+    
+    setTimeout(() => {
+      resultsBox.innerHTML = '';
+      performCalculation();
+    }, 300);
+  }, 800);
+});
+
+function performCalculation() {
   const age = toNum('age');
   const sex = selVal('sex');
   const scr = toNum('scr');
@@ -413,76 +514,150 @@ document.getElementById('calcBtn').addEventListener('click', ()=>{
   const w = toNum('weight');
   const showCG = (selVal('showCG')==='yes');
 
-  // 入力バリデーション
+  // Validation
   const errs = [];
   if(!age || age<18) errs.push('年齢は18歳以上の整数/数値を入力してください。');
   if(!scr || scr<=0) errs.push('sCr（mg/dL）は正の数値を入力してください。');
+  
   if(errs.length){
-    const e = document.createElement('div');
-    e.className='result-card';
-    e.innerHTML = `<div class="title">入力エラー</div><ul class="muted">${errs.map(x=>`<li>${x}</li>`).join('')}</ul>`;
-    resultsBox.appendChild(e);
-    return;
-  }
-  const bsa = (h && w) ? bsaDuBois(h, w) : null;
-
-  // 選択式
-  const checkedIds = Array.from(chipsBox.querySelectorAll('.chip input:checked')).map(cb=>cb.parentElement.dataset.id);
-  if(checkedIds.length===0){
-    const e = document.createElement('div');
-    e.className='result-card';
-    e.innerHTML = `<div class="title">式が未選択</div><div class="muted">少なくとも1つの推算式を選択してください。</div>`;
-    resultsBox.appendChild(e);
-    return;
-  }
-
-  // 計算＆描画
-  checkedIds.forEach(id=>{
-    const f = FORMULAS[id];
-    const val = f.calc(age, sex, scr);
-    const stage = kdigoStage(val);
-    const unIndexed = bsa ? (val * (bsa/1.73)) : null;
-
-    const card = document.createElement('div');
-    card.className = 'result-card';
-    card.innerHTML = `
-      <div class="kicker">${f.kind}・<span class="pill">${f.cite}</span></div>
-      <div class="title">${f.name}</div>
-      <div class="value">${val.toFixed(0)} <span class="muted">mL/min/1.73m²</span></div>
-      ${unIndexed ? `<div class="muted">非標準化（体表面積${bsa.toFixed(2)}m²換算）：<b>${unIndexed.toFixed(0)}</b> mL/min</div>`:''}
-      <div class="stage ${stage.cls}" style="margin-top:4px;">KDIGOステージ目安：<b>${stage.g}</b></div>
-      <details>
-        <summary>この式の説明と根拠を表示</summary>
-        <div style="margin-top:6px;">
-          <div class="muted" style="line-height:1.7;">
-            ${f.explain}
-          </div>
-          <div class="muted" style="margin-top:6px;">参考文献（要旨）：${f.refs.map(r=>`<span class="pill">${r}</span>`).join(' ')}</div>
-        </div>
-      </details>
+    const errorCard = document.createElement('div');
+    errorCard.className = 'glass-strong rounded-2xl p-6 border-red-400/50 bg-red-500/10 animate-bounce-soft';
+    errorCard.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-red-300">入力エラー</h3>
+      </div>
+      <ul class="text-sm text-slate-300 space-y-1">
+        ${errs.map(x=>`<li class="flex items-start gap-2"><span class="text-red-400">•</span>${x}</li>`).join('')}
+      </ul>
     `;
-    resultsBox.appendChild(card);
+    resultsBox.appendChild(errorCard);
+    return;
+  }
+  
+  const bsa = (h && w) ? bsaDuBois(h, w) : null;
+  const checkedIds = Array.from(chipsBox.querySelectorAll('input:checked')).map(cb=>cb.parentElement.dataset.id);
+  
+  if(checkedIds.length===0){
+    const errorCard = document.createElement('div');
+    errorCard.className = 'glass-strong rounded-2xl p-6 border-yellow-400/50 bg-yellow-500/10 animate-bounce-soft';
+    errorCard.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-yellow-300">式が未選択</h3>
+      </div>
+      <p class="text-sm text-slate-300">少なくとも1つの推算式を選択してください。</p>
+    `;
+    resultsBox.appendChild(errorCard);
+    return;
+  }
+
+  // Calculate and display results with animations
+  checkedIds.forEach((id, index) => {
+    setTimeout(() => {
+      const f = FORMULAS[id];
+      const val = f.calc(age, sex, scr);
+      const stage = kdigoStage(val);
+      const unIndexed = bsa ? (val * (bsa/1.73)) : null;
+
+      const card = document.createElement('div');
+      card.className = 'glass-strong rounded-2xl p-6 animate-slide-up transform hover:scale-[1.02] transition-all duration-300 hover:shadow-xl';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      card.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="text-xs text-slate-400">${f.kind}</div>
+              <h4 class="font-semibold text-slate-200">${f.name}</h4>
+              <div class="inline-block bg-slate-700/50 text-blue-200 text-xs px-2 py-1 rounded-lg">${f.cite}</div>
+            </div>
+          </div>
+          
+          <div class="space-y-2">
+            <div class="text-3xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+              ${val.toFixed(0)} <span class="text-base text-slate-400 font-normal">mL/min/1.73m²</span>
+            </div>
+            ${unIndexed ? `<div class="text-sm text-slate-400">非標準化（体表面積${bsa.toFixed(2)}m²換算）：<span class="font-semibold text-slate-300">${unIndexed.toFixed(0)}</span> mL/min</div>`:''}
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-700/30 border border-slate-600">
+              <div class="w-2 h-2 rounded-full ${stage.cls === 'text-green-400' ? 'bg-green-400' : stage.cls === 'text-yellow-400' ? 'bg-yellow-400' : 'bg-red-400'}"></div>
+              <span class="text-sm ${stage.cls} font-semibold">KDIGOステージ: ${stage.g}</span>
+            </div>
+          </div>
+          
+          <details class="group">
+            <summary class="cursor-pointer text-blue-300 hover:text-blue-200 transition-colors duration-200 select-none text-sm">
+              <span class="group-open:rotate-90 inline-block transition-transform duration-200">▶</span>
+              この式の説明と根拠を表示
+            </summary>
+            <div class="mt-3 p-4 rounded-xl bg-slate-800/30 border border-slate-700 space-y-3 animate-slide-up">
+              <p class="text-sm text-slate-300 leading-relaxed">${f.explain}</p>
+              <div class="text-xs text-slate-400">
+                参考文献：${f.refs.map(r=>`<span class="inline-block bg-slate-700 px-2 py-1 rounded text-blue-200">${r}</span>`).join(' ')}
+              </div>
+            </div>
+          </details>
+        </div>
+      `;
+      
+      resultsBox.appendChild(card);
+      
+      // Animate in
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 50);
+    }, index * 150);
   });
 
-  // Cockcroft–Gault（参考）
+  // Cockcroft-Gault if enabled
   if(showCG){
-    const ccr = ccr_cg(age, sex, scr, w);
-    const card = document.createElement('div');
-    card.className = 'result-card';
-    card.innerHTML = `
-      <div class="kicker">参考（薬物投与量調整などに用いられることが多い）</div>
-      <div class="title">Cockcroft–Gault（体重使用, 未標準化）</div>
-      <div class="value">${ccr? ccr.toFixed(0):'—'} <span class="muted">mL/min</span></div>
-      <details>
-        <summary>計算式の説明</summary>
-        <div class="muted" style="margin-top:6px;">
-          (140 − 年齢) × 体重(kg) ÷ (72 × sCr)（女性は×0.85）。BSA標準化は行いません。臨床では体重の選択（実測/理想/調整）が議論となる点に注意。
+    setTimeout(() => {
+      const ccr = ccr_cg(age, sex, scr, w);
+      const card = document.createElement('div');
+      card.className = 'glass-strong rounded-2xl p-6 animate-slide-up transform hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-purple-400/30';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      card.innerHTML = `
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <div class="text-xs text-purple-300">参考（薬物投与量調整などに用いられることが多い）</div>
+            <h4 class="font-semibold text-slate-200">Cockcroft–Gault（体重使用, 未標準化）</h4>
+          </div>
+          
+          <div class="text-3xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+            ${ccr? ccr.toFixed(0):'—'} <span class="text-base text-slate-400 font-normal">mL/min</span>
+          </div>
+          
+          <details class="group">
+            <summary class="cursor-pointer text-purple-300 hover:text-purple-200 transition-colors duration-200 select-none text-sm">
+              <span class="group-open:rotate-90 inline-block transition-transform duration-200">▶</span>
+              計算式の説明
+            </summary>
+            <div class="mt-3 p-4 rounded-xl bg-purple-900/20 border border-purple-700/50 animate-slide-up">
+              <p class="text-sm text-slate-300 leading-relaxed">
+                (140 − 年齢) × 体重(kg) ÷ (72 × sCr)（女性は×0.85）。BSA標準化は行いません。臨床では体重の選択（実測/理想/調整）が議論となる点に注意。
+              </p>
+            </div>
+          </details>
         </div>
-      </details>
-    `;
-    resultsBox.appendChild(card);
+      `;
+      
+      resultsBox.appendChild(card);
+      
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 50);
+    }, checkedIds.length * 150 + 100);
   }
-});
+}
 </script>
 </body>
 </html>
