@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>日本在住外国人向け eGFR 計算ツール</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        backdropBlur: {
+          'xs': '2px',
+        },
+        animation: {
+          'fade-in': 'fadeIn 0.5s ease-in-out',
+          'slide-up': 'slideUp 0.4s ease-out',
+          'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+          'bounce-soft': 'bounceSoft 0.6s ease-out',
+          'shimmer': 'shimmer 1.5s ease-in-out infinite',
+        },
+        keyframes: {
+          fadeIn: {
+            '0%': { opacity: '0', transform: 'translateY(10px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' }
+          },
+          slideUp: {
+            '0%': { opacity: '0', transform: 'translateY(20px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' }
+          },
+          pulseGlow: {
+            '0%, 100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' },
+            '50%': { boxShadow: '0 0 30px rgba(59, 130, 246, 0.6)' }
+          },
+          bounceSoft: {
+            '0%': { transform: 'scale(0.95)' },
+            '50%': { transform: 'scale(1.02)' },
+            '100%': { transform: 'scale(1)' }
+          },
+          shimmer: {
+            '0%': { transform: 'translateX(-100%)' },
+            '100%': { transform: 'translateX(100%)' }
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body {
+    background: 
+      radial-gradient(1200px 800px at 80% -10%, rgba(31, 42, 68, 0.8) 0%, transparent 60%),
+      radial-gradient(1000px 600px at -10% 120%, rgba(25, 37, 62, 0.8) 0%, transparent 60%),
+      linear-gradient(180deg, #0f172a, #1e293b 50%, #0f172a 100%);
+    min-height: 100vh;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+  }
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+  }
+  .shimmer-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 2s infinite;
+  }
+</style>
+</head>
+<body class="text-slate-100 font-sans antialiased">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Header -->
+    <header class="glass rounded-3xl p-6 mb-6 shadow-2xl animate-fade-in">
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+        日本在住外国人向け eGFR 計算ツール（sCrベース）
+      </h1>
+      <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+        日本の臨床現場で使いやすいUIで、国籍に応じた推奨/類縁の推算式をまとめて計算。身長・体重を入れるとBSA補正解除（mL/min）も表示。
+        <span class="inline-block bg-slate-700/50 text-blue-200 text-xs px-3 py-1 rounded-full ml-2 border border-slate-600">成人用</span>
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Left Panel: Input -->
+      <section class="glass rounded-3xl p-6 shadow-2xl animate-slide-up space-y-6">
+        <!-- Nationality Selection -->
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-slate-300">国籍 / 地域を選択</label>
+          <select id="nationality" class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10">
+            <option value="JP" class="bg-slate-800">日本人（参考：JSN式）</option>
+            <option value="CN" class="bg-slate-800">中国（中国式あり／CKD-EPI推奨）</option>
+            <option value="TH" class="bg-slate-800">タイ（タイ独自式あり）</option>
+            <option value="KR" class="bg-slate-800">韓国（CKD-EPI推奨）</option>
+            <option value="VN" class="bg-slate-800">ベトナム（近縁：タイ式も参考）</option>
+            <option value="PH" class="bg-slate-800">フィリピン（近縁：タイ式も参考）</option>
+            <option value="NP" class="bg-slate-800">ネパール（近縁：タイ式も参考）</option>
+            <option value="WH" class="bg-slate-800">白人（CKD-EPI 2021推奨）</option>
+            <option value="AF" class="bg-slate-800">黒人（CKD-EPI 2021推奨）</option>
+            <option value="OT" class="bg-slate-800">その他（CKD-EPI 2021推奨）</option>
+          </select>
+          <p id="natNote" class="text-xs text-slate-400 leading-relaxed"></p>
+        </div>
+
+        <!-- Age and Sex -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-slate-300">年齢（歳）</label>
+            <input id="age" type="number" inputmode="numeric" placeholder="例）65" 
+                   class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
+          </div>
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-slate-300">性別</label>
+            <select id="sex" class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10">
+              <option value="male" class="bg-slate-800">男性</option>
+              <option value="female" class="bg-slate-800">女性</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Serum Creatinine -->
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-slate-300">血清クレアチニン sCr（mg/dL）</label>
+          <input id="scr" type="number" step="0.01" inputmode="decimal" placeholder="例）1.02" 
+                 class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
+        </div>
+
+        <!-- Optional Fields -->
+        <details class="group">
+          <summary class="cursor-pointer text-blue-300 hover:text-blue-200 transition-colors duration-200 select-none">
+            <span class="group-open:rotate-90 inline-block transition-transform duration-200">▶</span>
+            オプション（体格・その他）
+          </summary>
+          <div class="mt-4 space-y-4 animate-slide-up">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <label class="block text-sm font-medium text-slate-300">身長（cm）</label>
+                <input id="height" type="number" step="0.1" inputmode="decimal" placeholder="例）170" 
+                       class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
+              </div>
+              <div class="space-y-3">
+                <label class="block text-sm font-medium text-slate-300">体重（kg）</label>
+                <input id="weight" type="number" step="0.1" inputmode="decimal" placeholder="例）65" 
+                       class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10" />
+              </div>
+            </div>
+            <div class="space-y-3">
+              <label class="block text-sm font-medium text-slate-300">Cockcroft–Gault（参考）を同時表示</label>
+              <select id="showCG" class="w-full p-4 rounded-2xl glass border-slate-600 text-slate-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/10">
+                <option value="yes" class="bg-slate-800">表示する（体重を使用）</option>
+                <option value="no" class="bg-slate-800">表示しない</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
+        <!-- Formula Selection -->
+        <div class="space-y-4">
+          <label class="block text-sm font-medium text-slate-300">この国籍でよく使う/参考になる推算式（複数選択可）</label>
+          <div id="formulaChips" class="flex flex-wrap gap-3"></div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            ※ 推奨＝その国籍に第一選択として勧められる/検証の厚い式、参考＝地理・人種で近縁または歴史的比較用
+          </p>
+        </div>
+
+        <!-- Calculate Button -->
+        <button id="calcBtn" class="w-full p-4 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shimmer-effect animate-pulse-glow">
+          <span class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            計算する
+          </span>
+        </button>
+      </section>
+
+      <!-- Right Panel: Results -->
+      <section class="glass rounded-3xl p-6 shadow-2xl animate-slide-up" style="animation-delay: 0.1s;">
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 00-2 2h2a2 2 0 002-2V5a2 2 0 00-2-2H2a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <h3 class="text-lg font-semibold text-slate-200">計算結果</h3>
+          </div>
+          <div id="results" class="space-y-4"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass rounded-3xl p-6 mt-6 shadow-2xl animate-fade-in" style="animation-delay: 0.2s;">
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+          <h4 class="font-semibold text-yellow-300">注意</h4>
+        </div>
+        <ul class="text-sm text-slate-300 space-y-2 leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-yellow-400 mt-1">•</span>
+            本ツールは<strong class="text-slate-200">成人</strong>用のsCr推算式です（急性腎障害などsCrが急変する状況では不正確）。
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-yellow-400 mt-1">•</span>
+            結果は<strong class="text-slate-200">推算</strong>です。境界例・極端な体格やサルコペニアでは<strong class="text-slate-200">シスタチンC</strong>や<strong class="text-slate-200">実測GFR</strong>（核医学など）をご検討ください。
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-yellow-400 mt-1">•</span>
+            BSA未入力時は<strong class="text-slate-200">標準化eGFR（mL/min/1.73m²）</strong>のみ表示。身長・体重を入れると<strong class="text-slate-200">非標準化（mL/min）</strong>も併記します。
+          </li>
+        </ul>
+      </div>
+    </footer>
+  </div>
+
+<script>
+/** -------------------------
+ *  計算ロジック
+ *------------------------- */
+// BSA (DuBois)
+function bsaDuBois(heightCm, weightKg){
+  if(!heightCm || !weightKg) return null;
+  return 0.007184 * Math.pow(weightKg, 0.425) * Math.pow(heightCm, 0.725);
+}
+// JSN 日本人式（sCr・成人）
+function egfr_jsn(age, sex, scr){
+  // eGFR = 194 × Scr^−1.094 × Age^−0.287 × (女性0.739)
+  let base = 194 * Math.pow(scr, -1.094) * Math.pow(age, -0.287);
+  if(sex==='female') base *= 0.739;
+  return base;
+}
+// CKD-EPI 2021（creatinine, race-free）
+function egfr_ckdepi2021(age, sex, scr){
+  const k = (sex==='female') ? 0.7 : 0.9;
+  const a = (sex==='female') ? -0.241 : -0.302; // NKF/NIDDK公表値
+  const minPart = Math.min(scr/k, 1);
+  const maxPart = Math.max(scr/k, 1);
+  return 142 * Math.pow(minPart, a) * Math.pow(maxPart, -1.200) * Math.pow(0.9938, age) * (sex==='female' ? 1.012 : 1);
+}
+// CKD-EPI 2009（比較用：非黒人 / 黒人）
+function egfr_ckdepi2009(age, sex, scr, isBlack=false){
+  const k = (sex==='female') ? 0.7 : 0.9;
+  const a = (sex==='female') ? -0.329 : -0.411;
+  const minPart = Math.min(scr/k, 1);
+  const maxPart = Math.max(scr/k, 1);
+  let val = 141 * Math.pow(minPart, a) * Math.pow(maxPart, -1.209) * Math.pow(0.993, age) * (sex==='female' ? 1.018 : 1);
+  if(isBlack) val *= 1.159;
+  return val;
+}
+// 中国C-MDRD（中国係数1.233）
+function egfr_c_mdrd(age, sex, scr){
+  let v = 175 * Math.pow(scr, -1.154) * Math.pow(age, -0.203);
+  if(sex==='female') v *= 0.742;
+  v *= 1.233;
+  return v;
+}
+// 中国 Xiangya 2019（mg/dL対応式）
+function egfr_xiangya2019(age, sex, scr){
+  // eGFR = 2374.78 × Scr^-0.54753 × Age^-0.25011 × (女性 0.8526126)
+  let v = 2374.78 * Math.pow(scr, -0.54753) * Math.pow(age, -0.25011);
+  if(sex==='female') v *= 0.8526126;
+  return v;
+}
+// タイ：MDRD再表現 × 1.129
+function egfr_thai_mdrd(age, sex, scr){
+  let v = 175 * Math.pow(scr, -1.154) * Math.pow(age, -0.203);
+  if(sex==='female') v *= 0.742;
+  v *= 1.129; // Thai racial factor
+  return v;
+}
+// タイ独自式（Praditpornsilpa 2011）
+function egfr_thai_independent(age, sex, scr){
+  let v = 375.5 * Math.pow(scr, -0.848) * Math.pow(age, -0.364);
+  if(sex==='female') v *= 0.712;
+  return v;
+}
+// Cockcroft–Gault（参考：mL/min）
+function ccr_cg(age, sex, scr, weightKg){
+  if(!weightKg) return null;
+  let v = ((140 - age) * weightKg) / (72 * scr);
+  if(sex==='female') v *= 0.85;
+  return v;
+}
+
+// KDIGO Gステージ（目安）
+function kdigoStage(egfr){
+  if(egfr >= 90) return {g:"G1", cls:"text-green-400"};
+  if(egfr >= 60) return {g:"G2", cls:"text-green-400"};
+  if(egfr >= 45) return {g:"G3a", cls:"text-yellow-400"};
+  if(egfr >= 30) return {g:"G3b", cls:"text-yellow-400"};
+  if(egfr >= 15) return {g:"G4", cls:"text-red-400"};
+  return {g:"G5", cls:"text-red-400"};
+}
+
+/** -------------------------
+ *  フォーミュラ定義と国籍マッピング
+ *------------------------- */
+const FORMULAS = {
+  JSN: {
+    id:"JSN",
+    name:"JSN日本人式（sCr）",
+    calc: egfr_jsn,
+    kind:"推奨（日本人）",
+    cite:"日本腎臓学会（成人人日本式）",
+    explain:`日本人データから導出された3変数モデル。eGFR = 194 × sCr^-1.094 × 年齢^-0.287（女性は×0.739）。酵素法sCr・成人用。`,
+    refs:["JSN 2013/2009"]
+  },
+  CKD2021: {
+    id:"CKD2021",
+    name:"CKD-EPI 2021（race-free, sCr）",
+    calc: egfr_ckdepi2021,
+    kind:"推奨（国籍横断）",
+    cite:"NKF/ASN・KDIGO推奨（人種項目なし）",
+    explain:`2021年改訂の国際式。142 × min(sCr/k,1)^α × max(sCr/k,1)^−1.200 × 0.9938^年齢 ×（女性1.012）。k=0.7/0.9, α=女性-0.241/男性-0.302。`,
+    refs:["NKF/NIDDK 2021"]
+  },
+  CKD2009NB: {
+    id:"CKD2009NB",
+    name:"CKD-EPI 2009（非黒人, sCr）",
+    calc: (a,s,cr)=>egfr_ckdepi2009(a,s,cr,false),
+    kind:"参考（歴史的比較）",
+    cite:"CKD-EPI 2009（非黒人）",
+    explain:`141 × min(sCr/k,1)^α × max(sCr/k,1)^−1.209 × 0.993^年齢 ×（女性1.018）。k=0.7/0.9, α=女性-0.329/男性-0.411。`,
+    refs:["CKD-EPI 2009"]
+  },
+  CKD2009BL: {
+    id:"CKD2009BL",
+    name:"CKD-EPI 2009（黒人, sCr）",
+    calc: (a,s,cr)=>egfr_ckdepi2009(a,s,cr,true),
+    kind:"参考（歴史的比較）",
+    cite:"CKD-EPI 2009（黒人係数あり）",
+    explain:`上記2009式に黒人係数1.159を乗じる版。2021年以降はrace-free式が推奨。`,
+    refs:["CKD-EPI 2009"]
+  },
+  C_MDRD: {
+    id:"C_MDRD",
+    name:"C-MDRD（中国補正1.233）",
+    calc: egfr_c_mdrd,
+    kind:"推奨/候補（中国）",
+    cite:"MDRDの中国係数1.233",
+    explain:`175 × sCr^-1.154 × 年齢^-0.203 ×（女性0.742）× 1.233（中国係数）。`,
+    refs:["C-MDRD"]
+  },
+  XIANGYA: {
+    id:"XIANGYA",
+    name:"Xiangya 2019（中国式, sCr）",
+    calc: egfr_xiangya2019,
+    kind:"推奨/候補（中国, 最新）",
+    cite:"Xiangya 2019",
+    explain:`2374.78 × sCr^-0.54753 × 年齢^-0.25011 ×（女性0.8526126）。中国人で高精度（P30向上報告）。`,
+    refs:["Xiangya 2019"]
+  },
+  TH_MDRD: {
+    id:"TH_MDRD",
+    name:"MDRD × 1.129（タイ係数）",
+    calc: egfr_thai_mdrd,
+    kind:"推奨/候補（タイ）",
+    cite:"MDRDのタイ係数1.129",
+    explain:`175 × sCr^-1.154 × 年齢^-0.203 ×（女性0.742）× 1.129（タイ係数）。`,
+    refs:["Thai MDRD"]
+  },
+  TH_INDEP: {
+    id:"TH_INDEP",
+    name:"Thai独自式 2011（sCr）",
+    calc: egfr_thai_independent,
+    kind:"推奨/候補（タイ）",
+    cite:"Praditpornsilpa 2011",
+    explain:`375.5 × sCr^-0.848 × 年齢^-0.364 ×（女性0.712）。`,
+    refs:["Thai Eq (2011)"]
+  }
+};
+
+// 国籍→初期表示（推奨ON/参考候補）
+const NAT_MAP = {
+  JP: {note:"日本人にはJSN式が標準。比較用にCKD-EPIも選択可能。", on:["JSN","CKD2021"], extra:["CKD2009NB"]},
+  CN: {note:"中国ではC-MDRDやXiangya式の報告あり。国際比較用にCKD-EPI 2021も。", on:["CKD2021","C_MDRD","XIANGYA"], extra:["CKD2009NB"]},
+  TH: {note:"タイは独自式やMDRD×1.129が報告。CKD-EPIも参考に。", on:["TH_INDEP","TH_MDRD","CKD2021"], extra:["CKD2009NB"]},
+  KR: {note:"韓国はCKD-EPIが一般的。JSNは過小推定傾向の報告あり。", on:["CKD2021"], extra:["CKD2009NB"]},
+  VN: {note:"東南アジア近縁としてタイ式も参考候補。", on:["CKD2021"], extra:["TH_INDEP","TH_MDRD","CKD2009NB"]},
+  PH: {note:"東南アジア近縁としてタイ式も参考候補。", on:["CKD2021"], extra:["TH_INDEP","TH_MDRD","CKD2009NB"]},
+  NP: {note:"南アジアでは体格差が大。まずCKD-EPI、比較にタイ式も参考。", on:["CKD2021"], extra:["TH_INDEP","TH_MDRD","CKD2009NB"]},
+  WH: {note:"白人はCKD-EPI 2021を第一選択。", on:["CKD2021"], extra:["CKD2009NB"]},
+  AF: {note:"黒人は現行はrace-free CKD-EPI 2021を推奨（2009は黒人係数あり・参考）。", on:["CKD2021"], extra:["CKD2009BL","CKD2009NB"]},
+  OT: {note:"国籍が多様な場合はrace-free CKD-EPI 2021を基本に。", on:["CKD2021"], extra:["CKD2009NB"]}
+};
+
+/** -------------------------
+ *  UI 初期化
+ *------------------------- */
+const chipsBox = document.getElementById('formulaChips');
+const natSel = document.getElementById('nationality');
+const natNote = document.getElementById('natNote');
+const resultsBox = document.getElementById('results');
+
+function renderChips(nat){
+  chipsBox.innerHTML = '';
+  const map = NAT_MAP[nat];
+  natNote.textContent = map.note;
+  const toShow = [...map.on, ...map.extra];
+  
+  toShow.forEach(id => {
+    const f = FORMULAS[id];
+    const isRecommended = map.on.includes(id);
+    const chip = document.createElement('label');
+    chip.className = `
+      cursor-pointer select-none transition-all duration-300 transform hover:scale-105
+      px-4 py-3 rounded-2xl glass border border-slate-600
+      ${isRecommended ? 'ring-2 ring-blue-400 bg-blue-500/20' : 'hover:bg-white/10'}
+      hover:shadow-lg active:scale-95
+    `;
+    chip.title = f.kind + '｜' + f.cite;
+    chip.dataset.id = id;
+    
+    chip.innerHTML = `
+      <input type="checkbox" ${isRecommended ? 'checked':''} class="hidden"/>
+      <span class="text-sm font-medium ${isRecommended ? 'text-blue-200' : 'text-slate-300'}">${f.name}</span>
+    `;
+    
+    chip.addEventListener('click', (e) => {
+      if(e.target.tagName.toLowerCase() === 'input') return;
+      const cb = chip.querySelector('input');
+      cb.checked = !cb.checked;
+      
+      // Animate selection
+      chip.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        chip.style.transform = '';
+        if(cb.checked) {
+          chip.classList.add('ring-2', 'ring-blue-400', 'bg-blue-500/20');
+          chip.querySelector('span').classList.add('text-blue-200');
+          chip.querySelector('span').classList.remove('text-slate-300');
+        } else {
+          chip.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-500/20');
+          chip.querySelector('span').classList.remove('text-blue-200');
+          chip.querySelector('span').classList.add('text-slate-300');
+        }
+      }, 100);
+    });
+    
+    chipsBox.appendChild(chip);
+  });
+}
+
+renderChips(natSel.value);
+natSel.addEventListener('change', () => renderChips(natSel.value));
+
+/** -------------------------
+ *  計算
+ *------------------------- */
+function toNum(id){ const v = parseFloat(document.getElementById(id).value); return isFinite(v)? v: null; }
+function selVal(id){ return document.getElementById(id).value; }
+
+document.getElementById('calcBtn').addEventListener('click', () => {
+  const btn = document.getElementById('calcBtn');
+  
+  // Button animation
+  btn.style.transform = 'scale(0.95)';
+  btn.innerHTML = `
+    <span class="flex items-center justify-center gap-2">
+      <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      計算中...
+    </span>
+  `;
+  
+  setTimeout(() => {
+    btn.style.transform = '';
+    btn.innerHTML = `
+      <span class="flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        計算する
+      </span>
+    `;
+    
+    // Clear previous results with animation
+    Array.from(resultsBox.children).forEach((child, index) => {
+      setTimeout(() => {
+        child.style.opacity = '0';
+        child.style.transform = 'translateY(-10px)';
+      }, index * 50);
+    });
+    
+    setTimeout(() => {
+      resultsBox.innerHTML = '';
+      performCalculation();
+    }, 300);
+  }, 800);
+});
+
+function performCalculation() {
+  const age = toNum('age');
+  const sex = selVal('sex');
+  const scr = toNum('scr');
+  const h = toNum('height');
+  const w = toNum('weight');
+  const showCG = (selVal('showCG')==='yes');
+
+  // Validation
+  const errs = [];
+  if(!age || age<18) errs.push('年齢は18歳以上の整数/数値を入力してください。');
+  if(!scr || scr<=0) errs.push('sCr（mg/dL）は正の数値を入力してください。');
+  
+  if(errs.length){
+    const errorCard = document.createElement('div');
+    errorCard.className = 'glass-strong rounded-2xl p-6 border-red-400/50 bg-red-500/10 animate-bounce-soft';
+    errorCard.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-red-300">入力エラー</h3>
+      </div>
+      <ul class="text-sm text-slate-300 space-y-1">
+        ${errs.map(x=>`<li class="flex items-start gap-2"><span class="text-red-400">•</span>${x}</li>`).join('')}
+      </ul>
+    `;
+    resultsBox.appendChild(errorCard);
+    return;
+  }
+  
+  const bsa = (h && w) ? bsaDuBois(h, w) : null;
+  const checkedIds = Array.from(chipsBox.querySelectorAll('input:checked')).map(cb=>cb.parentElement.dataset.id);
+  
+  if(checkedIds.length===0){
+    const errorCard = document.createElement('div');
+    errorCard.className = 'glass-strong rounded-2xl p-6 border-yellow-400/50 bg-yellow-500/10 animate-bounce-soft';
+    errorCard.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-yellow-300">式が未選択</h3>
+      </div>
+      <p class="text-sm text-slate-300">少なくとも1つの推算式を選択してください。</p>
+    `;
+    resultsBox.appendChild(errorCard);
+    return;
+  }
+
+  // Calculate and display results with animations
+  checkedIds.forEach((id, index) => {
+    setTimeout(() => {
+      const f = FORMULAS[id];
+      const val = f.calc(age, sex, scr);
+      const stage = kdigoStage(val);
+      const unIndexed = bsa ? (val * (bsa/1.73)) : null;
+
+      const card = document.createElement('div');
+      card.className = 'glass-strong rounded-2xl p-6 animate-slide-up transform hover:scale-[1.02] transition-all duration-300 hover:shadow-xl';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      card.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="text-xs text-slate-400">${f.kind}</div>
+              <h4 class="font-semibold text-slate-200">${f.name}</h4>
+              <div class="inline-block bg-slate-700/50 text-blue-200 text-xs px-2 py-1 rounded-lg">${f.cite}</div>
+            </div>
+          </div>
+          
+          <div class="space-y-2">
+            <div class="text-3xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+              ${val.toFixed(0)} <span class="text-base text-slate-400 font-normal">mL/min/1.73m²</span>
+            </div>
+            ${unIndexed ? `<div class="text-sm text-slate-400">非標準化（体表面積${bsa.toFixed(2)}m²換算）：<span class="font-semibold text-slate-300">${unIndexed.toFixed(0)}</span> mL/min</div>`:''}
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-700/30 border border-slate-600">
+              <div class="w-2 h-2 rounded-full ${stage.cls === 'text-green-400' ? 'bg-green-400' : stage.cls === 'text-yellow-400' ? 'bg-yellow-400' : 'bg-red-400'}"></div>
+              <span class="text-sm ${stage.cls} font-semibold">KDIGOステージ: ${stage.g}</span>
+            </div>
+          </div>
+          
+          <details class="group">
+            <summary class="cursor-pointer text-blue-300 hover:text-blue-200 transition-colors duration-200 select-none text-sm">
+              <span class="group-open:rotate-90 inline-block transition-transform duration-200">▶</span>
+              この式の説明と根拠を表示
+            </summary>
+            <div class="mt-3 p-4 rounded-xl bg-slate-800/30 border border-slate-700 space-y-3 animate-slide-up">
+              <p class="text-sm text-slate-300 leading-relaxed">${f.explain}</p>
+              <div class="text-xs text-slate-400">
+                参考文献：${f.refs.map(r=>`<span class="inline-block bg-slate-700 px-2 py-1 rounded text-blue-200">${r}</span>`).join(' ')}
+              </div>
+            </div>
+          </details>
+        </div>
+      `;
+      
+      resultsBox.appendChild(card);
+      
+      // Animate in
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 50);
+    }, index * 150);
+  });
+
+  // Cockcroft-Gault if enabled
+  if(showCG){
+    setTimeout(() => {
+      const ccr = ccr_cg(age, sex, scr, w);
+      const card = document.createElement('div');
+      card.className = 'glass-strong rounded-2xl p-6 animate-slide-up transform hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-purple-400/30';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      card.innerHTML = `
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <div class="text-xs text-purple-300">参考（薬物投与量調整などに用いられることが多い）</div>
+            <h4 class="font-semibold text-slate-200">Cockcroft–Gault（体重使用, 未標準化）</h4>
+          </div>
+          
+          <div class="text-3xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+            ${ccr? ccr.toFixed(0):'—'} <span class="text-base text-slate-400 font-normal">mL/min</span>
+          </div>
+          
+          <details class="group">
+            <summary class="cursor-pointer text-purple-300 hover:text-purple-200 transition-colors duration-200 select-none text-sm">
+              <span class="group-open:rotate-90 inline-block transition-transform duration-200">▶</span>
+              計算式の説明
+            </summary>
+            <div class="mt-3 p-4 rounded-xl bg-purple-900/20 border border-purple-700/50 animate-slide-up">
+              <p class="text-sm text-slate-300 leading-relaxed">
+                (140 − 年齢) × 体重(kg) ÷ (72 × sCr)（女性は×0.85）。BSA標準化は行いません。臨床では体重の選択（実測/理想/調整）が議論となる点に注意。
+              </p>
+            </div>
+          </details>
+        </div>
+      `;
+      
+      resultsBox.appendChild(card);
+      
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 50);
+    }, checkedIds.length * 150 + 100);
+  }
+}
+</script>
+</body>
+</html>
